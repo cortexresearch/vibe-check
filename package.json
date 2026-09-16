@@ -1,0 +1,15 @@
+{
+  "name": "vibe-check",
+  "version": "1.0.0",
+  "private": true,
+  "description": "An interactive guide + gauntlet on shipping real code with AI agents.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

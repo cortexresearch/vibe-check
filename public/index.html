@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>VIBE CHECK — an agentic coding gauntlet</title>
+  <meta name="description" content="Learn the real agentic coding workflow, then prove you can spot the commit that sinks a vibe-coded build. Built for the CampAI challenge." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23ff2d1f%22/><text x=%2250%22 y=%2270%22 font-size=%2270%22 text-anchor=%22middle%22 font-family=%22monospace%22 fill=%22%230a0a0a%22>!</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Archivo+Black&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <span class="brand">VIBE<span class="brand-accent">CHECK</span></span>
+      <span class="brand-tag">// an agentic coding gauntlet</span>
+    </div>
+  </header>
+
+  <main id="app">
+
+    <!-- HERO -->
+    <section class="screen" id="screen-hero" data-active="true">
+      <div class="hero-stamp">FIELD MANUAL + LIVE DRILL</div>
+      <h1 class="hero-title">CAN YOUR<br />AGENT SHIP<br />THIS?</h1>
+      <p class="hero-sub">
+        Every "vibe coded" disaster started with someone accepting a diff they didn't read.
+        Run the guide, then survive the gauntlet: 20 real calls, one clock, SHIP or REVERT.
+      </p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" data-action="start-guide">START THE GUIDE →</button>
+        <button class="btn btn-ghost" data-action="start-game">SKIP TO THE GAUNTLET</button>
+      </div>
+      <div class="hero-footer">BUILT FOR THE <a href="https://campai.space/challenge" target="_blank" rel="noopener">CAMPAI</a> CHALLENGE — S2E15 · AGENTIC CODING GUIDE</div>
+    </section>
+
+    <!-- GUIDE -->
+    <section class="screen" id="screen-guide">
+      <div class="guide-head">
+        <span class="guide-kicker">THE REAL WORKFLOW</span>
+        <span class="guide-progress" id="guide-progress">STEP 1 / 6</span>
+      </div>
+      <div class="guide-card" id="guide-card">
+        <div class="guide-num" id="guide-num">01</div>
+        <h2 class="guide-title" id="guide-title">PLAN</h2>
+        <p class="guide-body" id="guide-body"></p>
+        <div class="guide-mistake" id="guide-mistake"></div>
+      </div>
+      <div class="guide-nav">
+        <button class="btn btn-ghost" data-action="guide-prev" id="guide-prev">← BACK</button>
+        <div class="guide-dots" id="guide-dots"></div>
+        <button class="btn btn-primary" data-action="guide-next" id="guide-next">NEXT →</button>
+      </div>
+    </section>
+
+    <!-- GAME -->
+    <section class="screen" id="screen-game">
+      <div class="game-hud">
+        <div class="hud-block">
+          <span class="hud-label">SCORE</span>
+          <span class="hud-value" id="hud-score">0</span>
+        </div>
+        <div class="hud-block">
+          <span class="hud-label">STREAK</span>
+          <span class="hud-value" id="hud-streak">0</span>
+        </div>
+        <div class="hud-block">
+          <span class="hud-label">CALL</span>
+          <span class="hud-value" id="hud-round">1/20</span>
+        </div>
+      </div>
+      <div class="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
+
+      <div class="round-card" id="round-card">
+        <div class="round-tag" id="round-tag">DIFF</div>
+        <div class="round-body" id="round-body"></div>
+
+        <div class="verdict" id="verdict" hidden>
+          <div class="verdict-stamp" id="verdict-stamp">CORRECT</div>
+          <p class="verdict-lesson" id="verdict-lesson"></p>
+          <button class="btn btn-primary" data-action="next-round" id="next-round-btn">NEXT CALL →</button>
+        </div>
+      </div>
+
+      <div class="round-actions" id="round-actions">
+        <button class="btn btn-revert" data-action="answer" data-answer="REVERT">✕ REVERT</button>
+        <button class="btn btn-ship" data-action="answer" data-answer="SHIP">✓ SHIP IT</button>
+      </div>
+      <div class="round-hint">← / → or click. Trust nothing you haven't read.</div>
+    </section>
+
+    <!-- RESULTS -->
+    <section class="screen" id="screen-results">
+      <div class="results-stamp" id="results-grade-stamp">AGENT WHISPERER</div>
+      <h2 class="results-score" id="results-score">18 / 20</h2>
+      <p class="results-copy" id="results-copy"></p>
+      <div class="results-actions">
+        <button class="btn btn-primary" data-action="replay">RUN IT AGAIN</button>
+        <button class="btn btn-ghost" data-action="reguide">REREAD THE GUIDE</button>
+      </div>
+      <div class="hero-footer">
+        SHIP YOUR OWN BUILD AT <a href="https://campai.space/challenge" target="_blank" rel="noopener">CAMPAI.SPACE/CHALLENGE</a>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
