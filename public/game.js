@@ -57,6 +57,69 @@
     { tag: "SHIP", body: "The feature ships behind a flag, goes to staging first, and the rollback command is written down before the flag flips in prod.", answer: "SHIP", lesson: "Flagged, staged, and reversible — the three things that make shipping a non-event instead of a gamble." },
   ];
 
+  const LAB_TASKS = [
+    {
+      id: "palindrome",
+      functionName: "isPalindrome",
+      name: "isPalindrome(str)",
+      desc: "Get the agent to write isPalindrome(str). Think about what \"palindrome\" should mean for messy real input before you type your prompt.",
+      tests: [
+        { args: ["racecar"], expected: true },
+        { args: ["A man a plan a canal Panama"], expected: true },
+        { args: ["hello"], expected: false },
+        { args: [""], expected: true },
+      ],
+    },
+    {
+      id: "sumEvens",
+      functionName: "sumEvens",
+      name: "sumEvens(arr)",
+      desc: "Get the agent to write sumEvens(arr) — sums the even numbers in an array. Say what should happen for an empty array, and whether the input array may be changed.",
+      tests: [
+        { args: [[1, 2, 3, 4]], expected: 6 },
+        { args: [[1, 3, 5]], expected: 0 },
+        { args: [[]], expected: 0 },
+        { args: [[2, 2, 2]], expected: 6 },
+      ],
+    },
+    {
+      id: "flatten",
+      functionName: "flattenOnce",
+      name: "flattenOnce(arr)",
+      desc: "Get the agent to write flattenOnce(arr) — flattens an array by exactly one level, not fully recursive. Be precise about \"one level\" or the agent will guess.",
+      tests: [
+        { args: [[1, [2, 3], [4]]], expected: [1, 2, 3, 4] },
+        { args: [[[1, 2], [3, [4, 5]]]], expected: [1, 2, 3, [4, 5]] },
+        { args: [[]], expected: [] },
+      ],
+    },
+    {
+      id: "uniqueChars",
+      functionName: "uniqueChars",
+      name: "uniqueChars(str)",
+      desc: "Get the agent to write uniqueChars(str) — true if every character in the string is unique. Decide out loud whether case should matter, and put it in your prompt.",
+      tests: [
+        { args: ["abcdef"], expected: true },
+        { args: ["hello"], expected: false },
+        { args: [""], expected: true },
+        { args: ["aA"], expected: true },
+      ],
+    },
+  ];
+
+  const SCOPE_VIOLATION_RE =
+    /\b(fetch|XMLHttpRequest|WebSocket|EventSource|importScripts|require)\s*\(|\bimport\s*\(|\b(document|window|top|parent|self|globalThis|navigator|localStorage|sessionStorage|indexedDB)\s*\.|\beval\s*\(|\bnew\s+Function\s*\(|\bwhile\s*\(\s*true\s*\)|\bfor\s*\(\s*;\s*;\s*\)/i;
+
+  const lab = {
+    taskIndex: 0,
+    solvedCount: 0,
+    totalTestsPassed: 0,
+    totalTests: 0,
+    currentCode: "",
+    currentFunctionName: "",
+    blocked: false,
+  };
+
   const GRADES = [
     { min: 0.9, title: "AGENT WHISPERER", copy: "You read the diff. Every time. That's the entire job." },
     { min: 0.7, title: "CAREFUL BUILDER", copy: "Solid instincts — a couple of these would've slipped past on a tired night. Reread the guide before your next build." },
@@ -77,7 +140,7 @@
   };
 
   const $ = (id) => document.getElementById(id);
-  const screens = ["hero", "guide", "game", "results"].reduce((acc, k) => {
+  const screens = ["hero", "guide", "game", "lab", "results"].reduce((acc, k) => {
     acc[k] = $(`screen-${k}`);
     return acc;
   }, {});
@@ -86,6 +149,7 @@
     Object.entries(screens).forEach(([k, el]) => {
       el.dataset.active = k === name ? "true" : "false";
     });
+    $("menu-btn").hidden = name === "hero";
   }
 
   function shuffledOrder(n) {
@@ -249,6 +313,280 @@
     showScreen("results");
   }
 
+  // ---- LIVE LAB ----
+  function currentLabTask() {
+    return LAB_TASKS[lab.taskIndex];
+  }
+
+  function resetLabPanels() {
+    $("lab-prompt").value = "";
+    $("lab-count").textContent = "0 / 500";
+    $("lab-agent").hidden = true;
+    $("lab-code").textContent = "";
+    $("lab-agent-meta").textContent = "";
+    $("lab-scan").hidden = true;
+    $("lab-scan").dataset.danger = "false";
+    $("lab-actions").hidden = true;
+    $("lab-results").hidden = true;
+    $("lab-results").innerHTML = "";
+    $("lab-next").hidden = true;
+    $("send-agent-btn").disabled = false;
+    $("send-agent-btn").textContent = "SEND TO AGENT →";
+    lab.currentCode = "";
+    lab.blocked = false;
+  }
+
+  function startLab() {
+    lab.taskIndex = 0;
+    lab.solvedCount = 0;
+    lab.totalTestsPassed = 0;
+    lab.totalTests = 0;
+    document.querySelector(".lab-task").hidden = false;
+    $("lab-prompt").hidden = false;
+    document.querySelector('label[for="lab-prompt"]').hidden = false;
+    document.querySelector(".lab-prompt-row").hidden = false;
+    $("lab-complete").hidden = true;
+    renderLabTask();
+    showScreen("lab");
+  }
+
+  function renderLabTask() {
+    const task = currentLabTask();
+    $("lab-progress").textContent = `TASK ${lab.taskIndex + 1} / ${LAB_TASKS.length}`;
+    $("lab-task-name").textContent = task.name;
+    $("lab-task-desc").textContent = task.desc;
+    resetLabPanels();
+  }
+
+  $("lab-prompt").addEventListener("input", (e) => {
+    $("lab-count").textContent = `${e.target.value.length} / 500`;
+  });
+
+  async function sendToAgent() {
+    const promptEl = $("lab-prompt");
+    const prompt = promptEl.value.trim();
+    if (!prompt) {
+      promptEl.focus();
+      return;
+    }
+    const task = currentLabTask();
+    const btn = $("send-agent-btn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>ASKING THE AGENT…';
+
+    const agentPanel = $("lab-agent");
+    const codeEl = $("lab-code");
+    const metaEl = $("lab-agent-meta");
+    agentPanel.hidden = false;
+    codeEl.textContent = "";
+    metaEl.textContent = "";
+    $("lab-scan").hidden = true;
+    $("lab-actions").hidden = true;
+    $("lab-results").hidden = true;
+
+    const startedAt = Date.now();
+    try {
+      const res = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId: task.id, prompt }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || `Agent request failed (${res.status})`);
+      }
+      const elapsed = Date.now() - startedAt;
+      const code = extractCode(data.text || "");
+      lab.currentCode = code;
+      lab.currentFunctionName = task.functionName;
+      codeEl.textContent = code || "(the agent returned no code)";
+      metaEl.textContent = `${data.model || "agent"} · ${elapsed}ms`;
+      renderScopeScan(code);
+      $("lab-actions").hidden = false;
+      btn.textContent = "SEND TO AGENT →";
+      btn.disabled = false;
+    } catch (err) {
+      codeEl.textContent = `ERROR: ${err.message}`;
+      metaEl.textContent = "";
+      btn.textContent = "SEND TO AGENT →";
+      btn.disabled = false;
+    }
+  }
+
+  function extractCode(text) {
+    const fence = text.match(/```(?:javascript|js)?\s*([\s\S]*?)```/i);
+    return (fence ? fence[1] : text).trim();
+  }
+
+  function renderScopeScan(code) {
+    const scanEl = $("lab-scan");
+    scanEl.hidden = false;
+    const match = code.match(SCOPE_VIOLATION_RE);
+    if (match) {
+      lab.blocked = true;
+      scanEl.dataset.danger = "true";
+      scanEl.innerHTML = `<b>SCOPE SCAN — BLOCKED:</b> the response touches something outside a pure function ("${match[0].trim()}"). This is exactly the kind of diff you revert without running it.`;
+    } else {
+      lab.blocked = false;
+      scanEl.dataset.danger = "false";
+      scanEl.innerHTML = "<b>SCOPE SCAN — clean:</b> no network calls, globals, or eval detected. Still your call whether the logic is right.";
+    }
+  }
+
+  function runLabTests() {
+    const task = currentLabTask();
+    const resultsEl = $("lab-results");
+    resultsEl.hidden = false;
+    resultsEl.innerHTML = "";
+    $("lab-actions").hidden = true;
+
+    if (lab.blocked) {
+      task.tests.forEach((t) => {
+        resultsEl.appendChild(labResultRow(false, `${task.functionName}(${t.args.map(JSON.stringify).join(", ")})`, "not run — blocked by scope scan"));
+      });
+      appendLabSummary(resultsEl, 0, task.tests.length);
+      lab.totalTests += task.tests.length;
+      finishLabTask(false);
+      return;
+    }
+
+    runInSandbox(lab.currentCode, task.functionName, task.tests, (outcome) => {
+      if (outcome.error) {
+        resultsEl.innerHTML = "";
+        resultsEl.appendChild(labResultRow(false, task.functionName, outcome.error));
+        appendLabSummary(resultsEl, 0, task.tests.length);
+        lab.totalTests += task.tests.length;
+        finishLabTask(false);
+        return;
+      }
+      let passed = 0;
+      outcome.results.forEach((r) => {
+        if (r.pass) passed += 1;
+        const call = `${task.functionName}(${r.args.map((a) => JSON.stringify(a)).join(", ")})`;
+        const detail = r.err
+          ? `threw: ${r.err}`
+          : `expected ${JSON.stringify(r.expected)}, got ${JSON.stringify(r.actual)}`;
+        resultsEl.appendChild(labResultRow(r.pass, call, r.pass ? `expected ${JSON.stringify(r.expected)}` : detail));
+      });
+      appendLabSummary(resultsEl, passed, task.tests.length);
+      lab.totalTests += task.tests.length;
+      lab.totalTestsPassed += passed;
+      finishLabTask(passed === task.tests.length);
+    });
+  }
+
+  function labResultRow(pass, call, detail) {
+    const row = document.createElement("div");
+    row.className = "lab-result-row";
+    row.dataset.pass = String(pass);
+    row.innerHTML = `<span class="lab-result-mark">${pass ? "✓" : "✕"}</span><span>${call}<br><span class="lab-result-detail">${detail}</span></span>`;
+    return row;
+  }
+
+  function appendLabSummary(container, passed, total) {
+    const summary = document.createElement("div");
+    summary.className = "lab-summary";
+    summary.dataset.pass = String(passed === total);
+    summary.textContent = passed === total ? `ALL ${total} TESTS PASS — SHIP IT` : `${passed} / ${total} PASS — REVERT`;
+    container.appendChild(summary);
+  }
+
+  function finishLabTask(solved) {
+    if (solved) lab.solvedCount += 1;
+    $("lab-next").hidden = false;
+  }
+
+  function runInSandbox(code, functionName, tests, callback) {
+    const safeCode = code.replace(/<\/script/gi, "<\\/script");
+    const testsJson = JSON.stringify(tests);
+    const harness = `<!doctype html><html><head></head><body><script>
+      (function () {
+        var tests = ${testsJson};
+        var logs = [];
+        console.log = function () { logs.push(Array.prototype.slice.call(arguments).join(" ")); };
+        try {
+          var __result;
+          (function () {
+            ${safeCode}
+            __result = typeof ${functionName} !== "undefined" ? ${functionName} : undefined;
+          })();
+          if (typeof __result !== "function") {
+            parent.postMessage({ type: "lab-result", error: "The agent's response did not define a function named ${functionName}." }, "*");
+            return;
+          }
+          var results = tests.map(function (t) {
+            var actual, err = null, pass = false;
+            try {
+              actual = __result.apply(null, t.args);
+              pass = JSON.stringify(actual) === JSON.stringify(t.expected);
+            } catch (e) {
+              err = String((e && e.message) || e);
+            }
+            return { args: t.args, expected: t.expected, actual: actual, pass: pass, err: err };
+          });
+          parent.postMessage({ type: "lab-result", results: results, logs: logs }, "*");
+        } catch (e) {
+          parent.postMessage({ type: "lab-result", error: String((e && e.message) || e) }, "*");
+        }
+      })();
+    <\/script></body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.className = "lab-sandbox";
+    iframe.sandbox = "allow-scripts";
+    let done = false;
+    const timeoutId = setTimeout(() => {
+      if (done) return;
+      done = true;
+      cleanup();
+      callback({ error: "Timed out — the code likely hangs (infinite loop?)." });
+    }, 3000);
+
+    function onMessage(e) {
+      if (e.source !== iframe.contentWindow || !e.data || e.data.type !== "lab-result") return;
+      if (done) return;
+      done = true;
+      clearTimeout(timeoutId);
+      cleanup();
+      callback(e.data);
+    }
+    function cleanup() {
+      window.removeEventListener("message", onMessage);
+      iframe.remove();
+    }
+    window.addEventListener("message", onMessage);
+    iframe.srcdoc = harness;
+    document.body.appendChild(iframe);
+  }
+
+  function nextLab() {
+    if (lab.taskIndex < LAB_TASKS.length - 1) {
+      lab.taskIndex += 1;
+      renderLabTask();
+    } else {
+      renderLabComplete();
+    }
+  }
+
+  function renderLabComplete() {
+    document.querySelector(".lab-task").hidden = true;
+    document.getElementById("lab-prompt").hidden = true;
+    document.querySelector('label[for="lab-prompt"]').hidden = true;
+    document.querySelector(".lab-prompt-row").hidden = true;
+    $("lab-agent").hidden = true;
+    $("lab-scan").hidden = true;
+    $("lab-actions").hidden = true;
+    $("lab-results").hidden = true;
+    $("lab-next").hidden = true;
+
+    const pct = lab.solvedCount / LAB_TASKS.length;
+    const grade = GRADES.find((g) => pct >= g.min) || GRADES[GRADES.length - 1];
+    $("lab-complete-stamp").textContent = grade.title;
+    $("lab-complete-score").textContent = `${lab.solvedCount} / ${LAB_TASKS.length} solved`;
+    $("lab-complete-copy").textContent = `${lab.totalTestsPassed} / ${lab.totalTests} test cases passed across every task. ${grade.copy}`;
+    $("lab-complete").hidden = false;
+  }
+
   // ---- EVENTS ----
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-action]");
@@ -260,6 +598,11 @@
     else if (action === "next-round") nextRound();
     else if (action === "replay") startGame();
     else if (action === "reguide") startGuide();
+    else if (action === "start-lab") startLab();
+    else if (action === "send-agent") sendToAgent();
+    else if (action === "run-tests") runLabTests();
+    else if (action === "next-lab") nextLab();
+    else if (action === "go-hero") showScreen("hero");
   });
 
   document.addEventListener("keydown", (e) => {

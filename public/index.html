@@ -18,6 +18,7 @@
     <div class="topbar-inner">
       <span class="brand">VIBE<span class="brand-accent">CHECK</span></span>
       <span class="brand-tag">// an agentic coding gauntlet</span>
+      <button class="menu-btn" data-action="go-hero" id="menu-btn" hidden>← MENU</button>
     </div>
   </header>
 
@@ -33,7 +34,8 @@
       </p>
       <div class="hero-actions">
         <button class="btn btn-primary" data-action="start-guide">START THE GUIDE →</button>
-        <button class="btn btn-ghost" data-action="start-game">SKIP TO THE GAUNTLET</button>
+        <button class="btn btn-ghost" data-action="start-game">THE GAUNTLET</button>
+        <button class="btn btn-lab" data-action="start-lab">LIVE LAB — REAL AGENT ⚡</button>
       </div>
       <div class="hero-footer">BUILT FOR THE <a href="https://campai.space/challenge" target="_blank" rel="noopener">CAMPAI</a> CHALLENGE — S2E15 · AGENTIC CODING GUIDE</div>
     </section>
@@ -91,6 +93,57 @@
         <button class="btn btn-ship" data-action="answer" data-answer="SHIP">✓ SHIP IT</button>
       </div>
       <div class="round-hint">← / → or click. Trust nothing you haven't read.</div>
+    </section>
+
+    <!-- LIVE LAB -->
+    <section class="screen" id="screen-lab">
+      <div class="lab-head">
+        <span class="guide-kicker">LIVE LAB — TALKS TO A REAL AGENT</span>
+        <span class="guide-progress" id="lab-progress">TASK 1 / 4</span>
+      </div>
+
+      <div class="lab-task" id="lab-task">
+        <div class="lab-task-name" id="lab-task-name">isPalindrome(str)</div>
+        <p class="lab-task-desc" id="lab-task-desc"></p>
+      </div>
+
+      <label class="lab-label" for="lab-prompt">YOUR PROMPT TO THE AGENT</label>
+      <textarea class="lab-prompt" id="lab-prompt" rows="3" maxlength="500"
+        placeholder="Write the instruction you'd actually give an AI coding agent. Vague in, vague out."></textarea>
+      <div class="lab-prompt-row">
+        <span class="lab-count" id="lab-count">0 / 500</span>
+        <button class="btn btn-primary" data-action="send-agent" id="send-agent-btn">SEND TO AGENT →</button>
+      </div>
+
+      <div class="lab-agent" id="lab-agent" hidden>
+        <div class="lab-agent-head">
+          <span id="lab-agent-label">AGENT RESPONSE</span>
+          <span class="lab-agent-meta" id="lab-agent-meta"></span>
+        </div>
+        <pre class="lab-code" id="lab-code"></pre>
+      </div>
+
+      <div class="lab-scan" id="lab-scan" hidden></div>
+
+      <div class="lab-actions" id="lab-actions" hidden>
+        <button class="btn btn-primary" data-action="run-tests" id="run-tests-btn">RUN TESTS →</button>
+      </div>
+
+      <div class="lab-results" id="lab-results" hidden></div>
+
+      <div class="lab-next" id="lab-next" hidden>
+        <button class="btn btn-primary" data-action="next-lab">NEXT TASK →</button>
+      </div>
+
+      <div id="lab-complete" hidden>
+        <div class="results-stamp" id="lab-complete-stamp">LAB COMPLETE</div>
+        <h2 class="results-score" id="lab-complete-score">3 / 4</h2>
+        <p class="results-copy" id="lab-complete-copy"></p>
+        <div class="results-actions">
+          <button class="btn btn-primary" data-action="start-lab">RUN IT AGAIN</button>
+          <button class="btn btn-ghost" data-action="go-hero">BACK TO MENU</button>
+        </div>
+      </div>
     </section>
 
     <!-- RESULTS -->
