@@ -6,7 +6,7 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
-const SITE_URL = process.env.SITE_URL || "https://vibe-check.up.railway.app";
+const SITE_URL = process.env.SITE_URL || "https://vibe-check-production-7aad.up.railway.app";
 
 // The tasks a prompt can target — kept server-side so the client can't
 // smuggle an arbitrary function name into the model's instructions.
